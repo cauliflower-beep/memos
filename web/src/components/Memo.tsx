@@ -1,10 +1,11 @@
-import dayjs from "dayjs";
+import { getRelativeTimeString } from "@/helpers/datetime";
 import { memo, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEditorStore, useFilterStore, useMemoStore, useUserStore } from "@/store/module";
 import Tooltip from "./kit/Tooltip";
+import Divider from "./kit/Divider";
 import { showCommonDialog } from "./Dialog/CommonDialog";
 import Icon from "./Icon";
 import MemoContent from "./MemoContent";
@@ -19,23 +20,14 @@ interface Props {
   readonly?: boolean;
 }
 
-export const getFormatedMemoTimeStr = (time: number, locale = "en"): string => {
-  if (Date.now() - time < 1000 * 60 * 60 * 24) {
-    return dayjs(time).locale(locale).fromNow();
-  } else {
-    return dayjs(time).locale(locale).format("YYYY/MM/DD HH:mm:ss");
-  }
-};
-
 const Memo: React.FC<Props> = (props: Props) => {
   const { memo, readonly } = props;
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const editorStore = useEditorStore();
   const filterStore = useFilterStore();
   const userStore = useUserStore();
   const memoStore = useMemoStore();
-  const [createdTimeStr, setCreatedTimeStr] = useState<string>(getFormatedMemoTimeStr(memo.createdTs, i18n.language));
+  const [createdTimeStr, setCreatedTimeStr] = useState<string>(getRelativeTimeString(memo.createdTs));
   const memoContainerRef = useRef<HTMLDivElement>(null);
   const isVisitorMode = userStore.isVisitorMode() || readonly;
 
@@ -43,7 +35,7 @@ const Memo: React.FC<Props> = (props: Props) => {
     let intervalFlag: any = -1;
     if (Date.now() - memo.createdTs < 1000 * 60 * 60 * 24) {
       intervalFlag = setInterval(() => {
-        setCreatedTimeStr(getFormatedMemoTimeStr(memo.createdTs, i18n.language));
+        setCreatedTimeStr(getRelativeTimeString(memo.createdTs));
       }, 1000 * 1);
     }
 
@@ -51,10 +43,6 @@ const Memo: React.FC<Props> = (props: Props) => {
       clearInterval(intervalFlag);
     };
   }, [i18n.language]);
-
-  const handleViewMemoDetailPage = () => {
-    navigate(`/m/${memo.id}`);
-  };
 
   const handleTogglePinMemoBtnClick = async () => {
     try {
@@ -90,8 +78,8 @@ const Memo: React.FC<Props> = (props: Props) => {
 
   const handleDeleteMemoClick = async () => {
     showCommonDialog({
-      title: "Delete memo",
-      content: "Are you sure to delete this memo?",
+      title: t("memo.delete-memo"),
+      content: t("memo.delete-confirm"),
       style: "warning",
       dialogName: "delete-memo-dialog",
       onConfirm: async () => {
@@ -221,34 +209,26 @@ const Memo: React.FC<Props> = (props: Props) => {
               <Icon.MoreHorizontal className="icon-img" />
             </span>
             <div className="more-action-btns-wrapper">
-              <div className="more-action-btns-container">
-                <div className="w-full flex flex-row justify-between px-3 py-2 mb-1 border-b dark:border-zinc-700">
-                  <Tooltip title={memo.pinned ? t("common.unpin") : t("common.pin")} side="top">
-                    <div onClick={handleTogglePinMemoBtnClick}>
-                      {memo.pinned ? (
-                        <Icon.Bookmark className="w-4 h-auto cursor-pointer rounded text-green-600" />
-                      ) : (
-                        <Icon.BookmarkPlus className="w-4 h-auto cursor-pointer rounded dark:text-gray-400" />
-                      )}
-                    </div>
-                  </Tooltip>
-                  <Tooltip title={t("common.edit")} side="top">
-                    <Icon.Edit3 className="w-4 h-auto cursor-pointer rounded dark:text-gray-400" onClick={handleEditMemoClick} />
-                  </Tooltip>
-                  <Tooltip title={t("common.share")} side="top">
-                    <Icon.Share
-                      className="w-4 h-auto cursor-pointer rounded dark:text-gray-400"
-                      onClick={handleGenerateMemoImageBtnClick}
-                    />
-                  </Tooltip>
-                </div>
-                <span className="btn" onClick={handleViewMemoDetailPage}>
-                  {t("memo.view-detail")}
+              <div className="more-action-btns-container min-w-[6em]">
+                <span className="btn" onClick={handleTogglePinMemoBtnClick}>
+                  {memo.pinned ? <Icon.BookmarkMinus className="w-4 h-auto mr-2" /> : <Icon.BookmarkPlus className="w-4 h-auto mr-2" />}
+                  {memo.pinned ? t("common.unpin") : t("common.pin")}
                 </span>
+                <span className="btn" onClick={handleEditMemoClick}>
+                  <Icon.Edit3 className="w-4 h-auto mr-2" />
+                  {t("common.edit")}
+                </span>
+                <span className="btn" onClick={handleGenerateMemoImageBtnClick}>
+                  <Icon.Share className="w-4 h-auto mr-2" />
+                  {t("common.share")}
+                </span>
+                <Divider />
                 <span className="btn text-orange-500" onClick={handleArchiveMemoClick}>
+                  <Icon.Archive className="w-4 h-auto mr-2" />
                   {t("common.archive")}
                 </span>
                 <span className="btn text-red-600" onClick={handleDeleteMemoClick}>
+                  <Icon.Trash className="w-4 h-auto mr-2" />
                   {t("common.delete")}
                 </span>
               </div>
